@@ -14,34 +14,24 @@ contract SettlementMechanism {
         return addNewSettlement(settlementDto, msg.sender);
     }
 
-
-    function addNewSettlement(SettlementDto calldata settlementDto, address payer) public returns (uint) {
-        require(bytes(settlementDto.name).length > 1, "Name must not be empty");
-        require(settlementDto.participants.length > 0, "Settlement participants have to exists");
-        require(payer != address(0), "Payer address not defined");
-        require(settlementDto.date > 0, "Date cannot be negative");
-
-        //TODO: revert if updateObligatories finished with error (transactonal)
-        uint newSettlementId = addSettlement(settlementDto, payer);
-        updatePayers(newSettlementId, payer);
-        updateObligatories(newSettlementId, settlementDto.participants);
-
-        return newSettlementId;
-
-    }
-
-
-    //TODO: who confirm, payer or obligator? add check 
+ 
     function confirm(uint settlementId) public {
         require(settlementId != 0, "Settlement id must not be empty");
 
         Settlement storage currentSettlement = settlements[settlementId];
+        require(currentSettlement.date != 0, "Settlement with given id not exists");
+
         ParticipantCost[] storage participants = currentSettlement.participants;
-         uint confirmedCount = 0;
+
+        uint confirmedCount = 0;
         for(uint j = 0; j < participants.length; j++) {
             if(participants[j].participant == msg.sender) {
                participants[j].confirmed = true;
-               confirmedCount++;
+            }
+            
+            //count all confirmed participants
+            if(participants[j].confirmed){
+                confirmedCount++;
             }
 
         }
@@ -63,7 +53,22 @@ contract SettlementMechanism {
 
 
     function getMyUnfinishedSettlements() view public returns (SettlementDetailsDto[] memory) {
-       return getMySettlements(false);
+        return getMySettlements(false);
+    }
+
+    function addNewSettlement(SettlementDto calldata settlementDto, address payer) private returns (uint) {
+        require(bytes(settlementDto.name).length > 1, "Name must not be empty");
+        require(settlementDto.participants.length > 0, "Settlement participants have to exists");
+        require(payer != address(0), "Payer address not defined");
+        require(settlementDto.date > 0, "Date cannot be negative");
+
+        //TODO: revert if updateObligatories finished with error (transactonal)
+        uint newSettlementId = addSettlement(settlementDto, payer);
+        updatePayers(newSettlementId, payer);
+        updateObligatories(newSettlementId, settlementDto.participants);
+
+        return newSettlementId;
+
     }
 
 
@@ -209,3 +214,4 @@ contract SettlementMechanism {
         uint amount;
     }
 }
+
