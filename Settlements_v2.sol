@@ -44,9 +44,9 @@ contract SettlementMechanism {
     }
 
 
-    function getAllSettlementsWhereIWasParticapated() public view returns (SettlementDetailsDto[] memory) {
-        SettlementDetailsDto[] memory payerSettlements = getAllSettlementsWhereIWasPayer();
-        SettlementDetailsDto[] memory obligationerSettlements = getAllSettlementsWhereIWasOwed();
+    function getAllSettlementsIParticipatedIn() public view returns (SettlementDetailsDto[] memory) {
+        SettlementDetailsDto[] memory payerSettlements = getAllSettlementsWhereIWasAPayer();
+        SettlementDetailsDto[] memory obligationerSettlements = getAllSettlementsWhereIOwedSomeone();
 
         return merge(payerSettlements, obligationerSettlements);
     }
@@ -94,11 +94,11 @@ contract SettlementMechanism {
         return filteredSettlements;
      }
     
-    function getAllSettlementsWhereIWasOwed() view private returns (SettlementDetailsDto[] memory) {
+    function getAllSettlementsWhereIOwedSomeone() view private returns (SettlementDetailsDto[] memory) {
         return mapToDetailsDtos(obligationerSettlementIds[msg.sender]);
      }
 
-    function getAllSettlementsWhereIWasPayer() view private returns (SettlementDetailsDto[] memory) {
+    function getAllSettlementsWhereIWasAPayer() view private returns (SettlementDetailsDto[] memory) {
         return mapToDetailsDtos(payerSettlementIds[msg.sender]);
      }
 
