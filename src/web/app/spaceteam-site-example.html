@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+<h2>Spaceteam1</h2>
+
+<p id="myaddr">Twoj adres: 0xE5462e8D05Db56218DF728783D81c85ce09004ff</p>
+<p id="adr2">Address2: 0x5e264a18e3a4dbd642ab8815a3031b6fa8a517895f380e5c971a3c06e0455976</p>
+<p id="adr3">Address3: 0xae702016eb44a974de06086e7d97bab31c3c5a6ffb0d5226b647512313783f87</p>
+
+<button type="button" onclick="checkBalance()">Sprawdź saldo</button>
+<input type="text" id="address" value="0x" size="80"/>
+
+<p id="balance">Oczekiwanie na adres</p>
+
+<div class="rendered-form">
+    <div class="formbuilder-text form-group field-text-1671299866504">
+        <label for="text-1671299866504" class="formbuilder-text-label">Nazwa<span class="formbuilder-required">*</span></label>
+        <input type="text" class="form-control" name="text-1671299866504" access="false" id="text-1671299866504"
+               required="required" aria-required="true">
+    </div>
+    <div class="formbuilder-date form-group field-date-1671299852662">
+        <label for="date-1671299852662" class="formbuilder-date-label">Data</label>
+        <input type="date" class="form-control" name="date-1671299852662" access="false" id="date-1671299852662">
+    </div>
+    <div class="formbuilder-select form-group field-select-1671300179833">
+        <label for="select-1671300179833" class="formbuilder-select-label">Adres uczestnika<span
+                class="formbuilder-required">*</span></label>
+        <select class="form-control" name="select-1671300179833" id="select-1671300179833" required="required"
+                aria-required="true">
+            <option value="0x33A9884ef745770C9454FCCFB8B1D8B202F33b79" selected="true"
+                    id="select-1671300179833-0">addr2
+            </option>
+            <option value="0xb37f13087061FeA287Fd67d004a6e9204C40D6c3"
+                    id="select-1671300179833-1">addr3
+            </option>
+        </select>
+    </div>
+    <div class="formbuilder-text form-group field-text-1671300242377">
+        <label for="text-1671300242377" class="formbuilder-text-label">Waluta<span class="formbuilder-required">*</span></label>
+        <input type="text" class="form-control" name="text-1671300242377" access="false" id="text-1671300242377"
+               required="required" aria-required="true">
+    </div>
+    <div class="formbuilder-number form-group field-number-1671300280940">
+        <label for="number-1671300280940" class="formbuilder-number-label">Wartość</label>
+        <input type="number" class="form-control" name="number-1671300280940" access="false" id="number-1671300280940">
+    </div>
+    <div class="formbuilder-button form-group field-button-1671302406643">
+        <button type="button" class="btn-default btn" name="button-1671302406643" access="false"
+                onclick="addSettlement()" id="button-1671302406643">Dodaj
+        </button>
+    </div>
+</div>
+
+<div class="formbuilder-button form-group field-button-1671302406643">
+    <button type="button" class="btn-default btn" name="button-1671302406643" access="false"
+            onclick="getActiveSettlements()" id="button-getactive">Get active settlements!
+    </button>
+</div>
+
+<p id="active"></p>
+
+<script>
+    // if (typeof web3 !== 'undefined') {
+      //  web3 = new Web3(web3.currentProvider);
+       // console.log("Usywam czegos innego kurwo");
+   // } else {
+    //    console.log("Uzywam localhot")
+        web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:32000'));
+    //}
+
+    if (web3 === 'undefined') {
+        console.log("Obiekt web3 nie został zainicjalizowany");
+    } else {
+        console.log("Obiekt web3 został zainicjalizowany");
+    }
+</script>
+
+<script type="text/javascript" src="../solidity/SpaceteamV1.js"></script>
+
+<script>
+    console.log(_abiSpaceteamV1);
+    console.log(_dataSpaceteamV1);
+
+    const myAddress = "0xE5462e8D05Db56218DF728783D81c85ce09004ff";
+    const address2 = "0x33A9884ef745770C9454FCCFB8B1D8B202F33b79";
+    const address3 = "0xb37f13087061FeA287Fd67d004a6e9204C40D6c3";
+    const contractAddress = "0x976bA039bd9f31F8712474DD1e1783869A60DC9A";
+
+    function checkBalance() {
+        web3.eth.getBalance(document.getElementById("address").value).then(balance => {
+            document.getElementById("balance").innerHTML = "Saldo: " + balance;
+        });
+    }
+
+    function addSettlement() {
+        let name = document.getElementById('text-1671299866504').value;
+        let date = document.getElementById('date-1671299852662').value;
+        let addr = document.getElementById('select-1671300179833').value;
+        let currency = document.getElementById('text-1671300242377').value;
+        let amount = document.getElementById('number-1671300280940').value;
+
+        console.log(name);
+        console.log(date);
+        console.log(addr);
+        console.log(currency);
+        console.log(amount);
+
+        var contract = new web3.eth.Contract(_abiSpaceteamV1, contractAddress);
+
+        let settlement = {
+            creatorAddress: myAddress,
+            id: uuidv4(),
+            name: name,
+            date: Date.parse(date),
+            participants: [
+                {
+                    participantAddress: addr,
+                    currency: currency,
+                    amount: amount,
+                    confirmed: false
+                }
+            ]
+
+        }
+
+        console.log(settlement);
+        contract.methods.addSettlement(settlement).send({from: myAddress})
+            .then(() => {
+                console.log("DONE")
+            });
+
+    }
+
+    function getActiveSettlements() {
+        var contract = new web3.eth.Contract(_abiSpaceteamV1, contractAddress);
+
+        contract.methods.getActiveSettlements().call()
+            .then(settlements => {
+                console.log(settlements);
+                document.getElementById("active").innerHTML += settlements;
+            });
+
+    }
+
+    function uuidv4() {
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+</script>
+
+</body>
+</html>
+
