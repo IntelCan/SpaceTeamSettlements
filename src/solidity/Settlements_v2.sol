@@ -19,7 +19,7 @@ contract SettlementMechanism {
         require(settlementId != 0, "Settlement id must not be empty");
 
         Settlement storage currentSettlement = settlements[settlementId];
-        require(currentSettlement.date != 0, "Settlement with given id not exists");
+        require(currentSettlement.date != 0, "Settlement with given id not exists: ");
 
         ParticipantCost[] storage participants = currentSettlement.participants;
 
