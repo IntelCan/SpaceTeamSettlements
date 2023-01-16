@@ -1,5 +1,5 @@
 import {expect, use} from 'chai';
-import {BigNumber, Contract} from 'ethers';
+import {Contract} from 'ethers';
 import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
 // @ts-ignore
 import SettlementMechanism from '../../../build/SettlementMechanism.json';
@@ -8,27 +8,15 @@ import {
     settlementWithThreeParticipants,
     twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants
 } from "./Settlements_fixture";
-import {Wallet} from "@ethersproject/wallet/src.ts";
 
 use(solidity);
 
-describe('SettlementMechanism', () => {
+describe('SettlementMechanism - adding new settlement', () => {
     const [wallet, participant1Wallet, participant2Wallet, participant3Wallet] = new MockProvider().getWallets()
     let contract: Contract
 
     beforeEach(async () => {
         contract = await deployContract(wallet, SettlementMechanism, []);
-    })
-
-    it('Returns empty array when caller gets settlements he participated in, ' +
-        'but caller address was never in any settlement', async () => {
-        expect(await contract.getAllSettlementsIParticipatedIn()).to.be.an('array').that.is.empty
-    })
-
-    //TODO: test empty when all finished
-    it('Returns empty array when caller gets his unfinished settlements, ' +
-        'but caller address was never in any settlement', async () => {
-        expect(await contract.getMyUnfinishedSettlements()).to.be.an('array').that.is.empty
     })
 
     it('Reverts when participant list is empty when adding new settlement', async () => {
@@ -142,6 +130,56 @@ describe('SettlementMechanism', () => {
     })
 
 
+})
+
+describe('SettlementMechanism - get all settlements i participated in', () => {
+    const [wallet, participant1Wallet, participant2Wallet, participant3Wallet] = new MockProvider().getWallets()
+    let contract: Contract
+
+    beforeEach(async () => {
+        contract = await deployContract(wallet, SettlementMechanism, []);
+    })
+
+
+    it('Returns empty array when caller gets settlements he participated in, ' +
+        'but caller address was never in any settlement', async () => {
+        expect(await contract.getAllSettlementsIParticipatedIn()).to.be.an('array').that.is.empty
+    })
+
+    it('Returns both settlements where i am the payer and the debtor', async () => {
+        //given
+        const settlementWhereIAmThePayer = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet);
+        const settlementWhereIAmADebtor = settlementWithOneParticipant(wallet);
+
+        await contract.addNewSettlement(settlementWhereIAmThePayer);
+        await contract.connect(participant3Wallet).addNewSettlement(settlementWhereIAmADebtor);
+
+        //when
+        const allSettlementsIParticipated = await contract.getAllSettlementsIParticipatedIn();
+
+        //then
+        expect(allSettlementsIParticipated.length).to.be.equal(2)
+        expect(allSettlementsIParticipated[0].payer).to.be.properAddress
+        expect(allSettlementsIParticipated[0].payer).to.be.equal(wallet.address)
+        expect(allSettlementsIParticipated[1].participants[0].participant).to.be.properAddress
+        expect(allSettlementsIParticipated[1].participants[0].participant).to.be.equal(wallet.address)
+    })
+})
+
+describe('SettlementMechanism - get my unfinished settlements', () => {
+    const [wallet, participant1Wallet, participant2Wallet, participant3Wallet] = new MockProvider().getWallets()
+    let contract: Contract
+
+    beforeEach(async () => {
+        contract = await deployContract(wallet, SettlementMechanism, []);
+    })
+
+
+    it('Returns empty array when caller gets his unfinished settlements, ' +
+        'but caller address was never in any settlement', async () => {
+        expect(await contract.getMyUnfinishedSettlements()).to.be.an('array').that.is.empty
+    })
+
     it('Gets unfinished settlements for contract caller', async () => {
         //given
         await twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants(wallet, participant1Wallet, participant2Wallet, participant3Wallet, contract);
@@ -174,7 +212,22 @@ describe('SettlementMechanism', () => {
         expect(participant2result.length).to.equal(1)
     })
 
+    it('Doesnt return finished settlements', async () => {
+        //given
+        const settlement = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet);
+        await contract.addNewSettlement(settlement);
+        let settlements = await contract.getMyUnfinishedSettlements();
+        let settlementId = settlements[0].id;
 
+        //when
+        await contract.connect(participant1Wallet).confirm(settlementId, {gasLimit: 5000000})
+        await contract.connect(participant2Wallet).confirm(settlementId, {gasLimit: 5000000})
+        await contract.connect(participant3Wallet).confirm(settlementId, {gasLimit: 5000000})
+
+        //then my unfinished result is empty
+        const myUnfinished = await contract.getMyUnfinishedSettlements();
+        expect(myUnfinished).to.be.an('array').that.is.empty
+    })
 })
 
 describe('SettlementMechanism - confirming', () => {
@@ -185,42 +238,53 @@ describe('SettlementMechanism - confirming', () => {
         contract = await deployContract(wallet, SettlementMechanism, []);
     })
 
+
+    it('Reverts when settlement cannot be found with given id', async () => {
+        await expect(contract.connect(participant2Wallet).confirm(2137, {gasLimit: 5000000}))
+            .to.be.reverted
+    })
+
+    it('Reverts when settlement id is passed empty', async () => {
+        await expect(contract.connect(participant2Wallet).confirm(0, {gasLimit: 5000000}))
+            .to.be.reverted
+    })
+
     it('Sets participants confirmed status to TRUE for given settlement', async () => {
         //given
         const settlement = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet);
-        //The return-value of a non-constant (neither pure nor view) function is available only when the function is called on-chain (i.e., from this contract or from another contract).
-        //
-        //When you call such function from the off-chain (e.g., from an ethers.js script), you need to execute it within a transaction, and the return-value is the hash of that transaction.
-        // let  tx2 = contract.addNewSettlement(settlement).then(txResponse => {
-        //     console.log(txResponse)
-        //     txResponse.wait()
-        //         .then(response => {
-        //             resp = "dududud"
-        //             console.log(response)
-        //         })
-        // });
-
-        let tx = await contract.addNewSettlement(settlement);
-        await tx.wait()
-        console.log(tx)
-
-        // const response = await contract.addNewSettlement(settlement);
-        // console.log(response.toString())
-        // const result = await contract.getMyUnfinishedSettlements();
-        // console.log(result)
-        //const settlementId = BigNumber.from(response._hex);
-        //console.log(settlementId)
+        await contract.addNewSettlement(settlement);
+        let settlements = await contract.getMyUnfinishedSettlements();
+        let settlementId = settlements[0].id;
+        await contract.connect(participant2Wallet).confirm(settlementId, {gasLimit: 5000000})
 
         //when
-        //await contract.connect(participant1Wallet).confirm(resp.toString(), {gasLimit: 5000000})
+        const result = await contract.getMyUnfinishedSettlements();
 
         //then
-        // const result = await contract.getMyUnfinishedSettlements();
-
-        //then
-        // expect(result[0].participants[0].confirmed).to.be.true
-        // expect(result[0].participants[1].confirmed).to.be.false
-        // expect(result[0].participants[2].confirmed).to.be.false
-
+        expect(result[0].participants[0].confirmed).to.be.false
+        expect(result[0].participants[1].confirmed).to.be.true
+        expect(result[0].participants[2].confirmed).to.be.false
     })
+
+    it('Sets settlement as finished when all participants confirms their obligations', async () => {
+        //given
+        const settlement = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet);
+        await contract.addNewSettlement(settlement);
+        let settlements = await contract.getMyUnfinishedSettlements();
+        let settlementId = settlements[0].id;
+
+        //when
+        await contract.connect(participant1Wallet).confirm(settlementId, {gasLimit: 5000000})
+        await contract.connect(participant2Wallet).confirm(settlementId, {gasLimit: 5000000})
+        await contract.connect(participant3Wallet).confirm(settlementId, {gasLimit: 5000000})
+
+        //and settlement is set to finished
+        const allSettlementsIParticipated = await contract.getAllSettlementsIParticipatedIn();
+        expect(allSettlementsIParticipated.length).to.be.equal(1)
+        expect(allSettlementsIParticipated[0].finished).to.be.true
+        expect(allSettlementsIParticipated[0].participants[0].confirmed).to.be.true
+        expect(allSettlementsIParticipated[0].participants[1].confirmed).to.be.true
+        expect(allSettlementsIParticipated[0].participants[2].confirmed).to.be.true
+    })
+
 })
