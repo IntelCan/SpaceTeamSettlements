@@ -118,7 +118,7 @@ describe('SettlementMechanism - adding new settlement', () => {
         expect(result[0].participants[2].participant).to.equal(participant3Wallet.address)
     })
 
-    it('Sets all participants obligations as NOT confirmed yes after adding new settlement', async () => {
+    it('Sets all participants obligations as NOT confirmed after adding new settlement', async () => {
         const someSettlement = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet)
 
         await contract.addNewSettlement(someSettlement)
