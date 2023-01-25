@@ -26,7 +26,7 @@ describe('SettlementMechanism - adding new settlement', () => {
             participants: []
         }
 
-        await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.reverted;
+        await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.revertedWith("Settlement participants have to exist");
     })
 
     it('Reverts when settlement name is empty when adding new settlement', async () => {
@@ -40,7 +40,7 @@ describe('SettlementMechanism - adding new settlement', () => {
             }]
         }
 
-        await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.reverted;
+        await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.revertedWith("Name must not be empty");
     })
 
     it('Reverts when date is negative when adding new settlement', async () => {
@@ -61,7 +61,6 @@ describe('SettlementMechanism - adding new settlement', () => {
         await expect(contract.addNewSettlement({}, {gasLimit: 5000000})).to.be.reverted;
     })
 
-    //TODO: change those to check message
     it('Reverts when new settlement contains payer in participants list', async () => {
         const someSettlement = {
             name: 'Pizza',
@@ -73,7 +72,7 @@ describe('SettlementMechanism - adding new settlement', () => {
             }]
         }
 
-        await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.reverted;
+        await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.revertedWith("You can't be a payer and participant at the same time");
     })
 
     it('Returns senders unfinished settlements when new settlement is freshly added', async () => {
@@ -241,12 +240,12 @@ describe('SettlementMechanism - confirming', () => {
 
     it('Reverts when settlement cannot be found with given id', async () => {
         await expect(contract.connect(participant2Wallet).confirm(2137, {gasLimit: 5000000}))
-            .to.be.reverted
+            .to.be.revertedWith("Settlement with given id doesn't exist")
     })
 
     it('Reverts when settlement id is passed empty', async () => {
         await expect(contract.connect(participant2Wallet).confirm(0, {gasLimit: 5000000}))
-            .to.be.reverted
+            .to.be.revertedWith("Settlement id must not be empty")
     })
 
     it('Sets participants confirmed status to TRUE for given settlement', async () => {

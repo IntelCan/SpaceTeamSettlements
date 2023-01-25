@@ -19,7 +19,7 @@ contract SettlementMechanism {
         require(settlementId != 0, "Settlement id must not be empty");
 
         Settlement storage currentSettlement = settlements[settlementId];
-        require(currentSettlement.date != 0, "Settlement with given id not exists: ");
+        require(currentSettlement.date != 0, "Settlement with given id doesn't exist");
 
         ParticipantCost[] storage participants = currentSettlement.participants;
 
@@ -58,7 +58,7 @@ contract SettlementMechanism {
 
     function addNewSettlement(SettlementDto calldata settlementDto, address payer) private returns (uint) {
         require(bytes(settlementDto.name).length > 1, "Name must not be empty");
-        require(settlementDto.participants.length > 0, "Settlement participants have to exists");
+        require(settlementDto.participants.length > 0, "Settlement participants have to exist");
         require(payer != address(0), "Payer address not defined");
         require(settlementDto.date > 0, "Date cannot be negative");
 
