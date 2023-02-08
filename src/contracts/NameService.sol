@@ -8,12 +8,12 @@ contract NameService {
         return bytes(names[msg.sender]).length != 0;
     }
 
-    function setNewName(string memory name) public {
+    function setNewName(string calldata name) public {
         require(bytes(name).length > 0, "Name must not be empty");
         names[msg.sender] = name;
     }
 
-    function getNamesFor(address[] memory addresses) public view returns (AddressName[] memory) {
+    function getNamesFor(address[] calldata addresses) public view returns (AddressName[] memory) {
         AddressName[] memory result = new AddressName[](addresses.length);
 
         for (uint i = 0; i < addresses.length; i++) {

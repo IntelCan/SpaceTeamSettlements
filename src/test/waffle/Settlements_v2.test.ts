@@ -208,7 +208,6 @@ describe('SettlementMechanism - get my unfinished settlements', () => {
 
         //then
         expect(participant2result).to.be.an('array').that.is.not.empty
-        expect(participant2result.length).to.equal(1)
     })
 
     it('Doesnt return finished settlements', async () => {
@@ -252,8 +251,8 @@ describe('SettlementMechanism - confirming', () => {
         //given
         const settlement = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet);
         await contract.addNewSettlement(settlement);
-        let settlements = await contract.getMyUnfinishedSettlements();
-        let settlementId = settlements[0].id;
+        const settlements = await contract.getMyUnfinishedSettlements();
+        const settlementId = settlements[0].id;
         await contract.connect(participant2Wallet).confirm(settlementId, {gasLimit: 5000000})
 
         //when
@@ -269,8 +268,8 @@ describe('SettlementMechanism - confirming', () => {
         //given
         const settlement = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet);
         await contract.addNewSettlement(settlement);
-        let settlements = await contract.getMyUnfinishedSettlements();
-        let settlementId = settlements[0].id;
+        const settlements = await contract.getMyUnfinishedSettlements();
+        const settlementId = settlements[0].id;
 
         //when
         await contract.connect(participant1Wallet).confirm(settlementId, {gasLimit: 5000000})

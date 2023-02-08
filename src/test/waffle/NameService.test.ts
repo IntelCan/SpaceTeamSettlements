@@ -14,27 +14,27 @@ describe('NameService', () => {
         contract = await deployContract(wallet1, NameService, [])
     })
 
-    it('should return false when name was not set for address', async () => {
+    it('Returns false when name was not set for address', async () => {
         const exists = await contract.checkNameExists()
 
         expect(exists).to.be.equal(false, "Should not exist in fresh contract")
     });
 
-    it('should add a name for sender address', async () => {
+    it('Adds a name for sender address', async () => {
         await contract.setNewName("TestName")
         const exists = await contract.checkNameExists()
 
         expect(exists).to.be.equal(true, "Name should exist for given address")
     });
 
-    it('should return false when other address is asking for name when name exists for other address', async () => {
+    it('Returns false when new address is checking if his name exists, when there are some names set for other addresses', async () => {
         await contract.setNewName("TestName")
         const exists = await contract.connect(wallet2).checkNameExists()
 
         expect(exists).to.be.equal(false, "Name should not exist for given address")
     });
 
-    it('should return names for given list of addresses', async () => {
+    it('Returns names for given list of addresses', async () => {
         await contract.setNewName("TestName")
         await contract.connect(wallet2).setNewName("TestName2")
         await contract.connect(wallet3).setNewName("TestName3")
