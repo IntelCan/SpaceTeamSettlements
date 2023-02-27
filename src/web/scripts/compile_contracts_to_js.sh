@@ -11,7 +11,6 @@ do
   /bin/cat <<EOF >"$file.js"
   var _data$file = "0x$(cat $compiledName.bin)";
   var _abi$file = $(cat $compiledName.abi);
-  var $file = new web3.eth.Contract(_abi$file);
 EOF
   popd
 done
