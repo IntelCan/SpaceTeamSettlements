@@ -1,0 +1,12 @@
+node_modules
+.env
+coverage
+coverage.json
+build
+.idea
+
+cache
+artifacts
+deployments
+*iml
+package-lock.json
