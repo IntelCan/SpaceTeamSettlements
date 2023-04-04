@@ -9,3 +9,17 @@ function getNamesForParticipants(participantAddresses) {
 
   return contract.methods.getNamesFor(participantAddresses).call();
 }
+
+function getAllParticipantsAddresses(settlements) {
+  let addresses = [];
+  for (entry in settlements) {
+    const settlement = settlements[entry];
+    addresses.push(settlement.payer);
+    for (entry in settlement.participants) {
+      const participant = settlement.participants[entry];
+      addresses.push(participant.participant);
+    }
+  }
+  addresses = [...new Set(addresses)];
+  return addresses;
+}
