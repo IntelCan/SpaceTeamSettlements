@@ -9,6 +9,6 @@ fn=$(basename $1 .sol)
 /bin/cat <<EOF >$fn.js
 var _data$fn = "0x$(cat $fn.bin)";
 var _abi$fn = $(cat $fn.abi);
-var $fn = web3.eth.contract(_abi$fn);
+var $fn = web3.eth.Contract(_abi$fn);
 EOF
 
