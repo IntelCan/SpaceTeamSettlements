@@ -1,26 +1,41 @@
 {
   "name": "spaceteam-settlements",
-  "version": "1.0.0",
+  "version": "0.0.1",
+  "description": "Project for managing payments of ordered food",
   "main": "index.js",
-  "license": "MIT",
   "scripts": {
-    "test": "export NODE_ENV=test && mocha",
-    "build": "waffle waffle.json",
-    "build-waffle": "waffle waffle.json",
-    "test-mocha": "NODE_ENV=test mocha",
-    "lint": "eslint '{src,test}/**/*.ts'",
-    "lint:fix": "eslint --fix '{src,test}/**/*.ts'"
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat deploy",
+    "test": "npx hardhat test",
+    "lint": "npx solhint './src/contracts/*.sol'",
+    "coverage": "npx hardhat coverage"
   },
+  "author": "Arek Boruch, Igor Kopec",
+  "license": "ISC",
   "devDependencies": {
-    "@openzeppelin/contracts": "^4.8.1",
+    "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/providers": "^5.7.2",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@typechain/ethers-v5": "^10.2.0",
+    "@typechain/hardhat": "^6.1.5",
     "@types/chai": "^4.3.4",
     "@types/mocha": "^10.0.1",
+    "@types/node": "^18.15.11",
     "chai": "^4.3.7",
-    "eslint": "^8.31.0",
-    "ethereum-waffle": "^3.4.4",
     "ethers": "^5.7.2",
-    "mocha": "^10.2.0",
+    "hardhat": "^2.13.0",
+    "hardhat-gas-reporter": "^1.0.9",
+    "solidity-coverage": "^0.8.2",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.4"
+    "typechain": "^8.1.1",
+    "typescript": "^5.0.3"
+  },
+  "dependencies": {
+    "hardhat-deploy": "^0.11.25",
+    "dotenv": "^16.0.3"
   }
 }

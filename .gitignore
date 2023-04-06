@@ -4,9 +4,12 @@ coverage
 coverage.json
 build
 .idea
+gas-report.txt
 
 cache
 artifacts
 deployments
 *iml
 package-lock.json
+typechain
+typechain-types
