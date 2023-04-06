@@ -1,17 +1,22 @@
-import {expect, use} from 'chai';
-import {Contract} from 'ethers';
-import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
-// @ts-ignore
-import NameService from '../../../build/NameService.json';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {expect} from 'chai';
+import { deployments, ethers, getNamedAccounts } from 'hardhat';
+import { Address } from 'hardhat-deploy/types';
+import { NameService } from '../../typechain-types';
 
-use(solidity);
 
 describe('NameService', () => {
-    const [wallet1, wallet2, wallet3] = new MockProvider().getWallets()
-    let contract: Contract
+    let contract: NameService
+    let deployer: Address 
+    let user1: SignerWithAddress, user2: SignerWithAddress
 
     beforeEach(async () => {
-        contract = await deployContract(wallet1, NameService, [])
+      deployer = (await getNamedAccounts()).deployer
+      const accounts = await ethers.getSigners()
+      user1 = accounts[1]
+      user2 = accounts[2]
+      await deployments.fixture()
+      contract = await ethers.getContract("NameService", deployer)
     })
 
     it('Returns false when name was not set for address', async () => {
@@ -29,19 +34,19 @@ describe('NameService', () => {
 
     it('Returns false when new address is checking if his name exists, when there are some names set for other addresses', async () => {
         await contract.setNewName("TestName")
-        const exists = await contract.connect(wallet2).checkNameExists()
+        const exists = await contract.connect(user1).checkNameExists()
 
         expect(exists).to.be.equal(false, "Name should not exist for given address")
     });
 
     it('Returns names for given list of addresses', async () => {
         await contract.setNewName("TestName")
-        await contract.connect(wallet2).setNewName("TestName2")
-        await contract.connect(wallet3).setNewName("TestName3")
+        await contract.connect(user1).setNewName("TestName2")
+        await contract.connect(user2).setNewName("TestName3")
         const names = await contract.getNamesFor([
-            wallet1.address,
-            wallet2.address,
-            wallet3.address
+            deployer,
+            user1.address,
+            user2.address
         ]);
 
         expect(names[0].name).to.be.equal("TestName", "Name should exist for given address")

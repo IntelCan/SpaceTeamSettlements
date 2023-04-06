@@ -1,9 +1,12 @@
 import {Wallet} from "@ethersproject/wallet/src.ts";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {Contract} from "ethers";
+import { Address } from "hardhat-deploy/types";
+import { SettlementMechanism } from "../../typechain-types";
 
 export const PLN = '0x504c4e0000000000000000000000000000000000000000000000000000000000'
 
-export async function twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants(wallet: Wallet, participant1Wallet: Wallet, participant2Wallet: Wallet, participant3Wallet: Wallet, contract: Contract) {
+export async function twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants(wallet: Address, participant1Wallet: SignerWithAddress, participant2Wallet: SignerWithAddress, participant3Wallet: SignerWithAddress, contract: SettlementMechanism) {
     const address1Settlement1 = {
         name: 'Pizza',
         date: 123,
@@ -36,7 +39,7 @@ export async function twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants
         date: 126,
         participants: [
             {
-                participant: wallet.address,
+                participant: wallet,
                 currency: PLN,
                 amount: 35
             }]
@@ -65,7 +68,7 @@ export async function twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants
 }
 
 
-export function settlementWithThreeParticipants(participant1Wallet: Wallet, participant2Wallet: Wallet, participant3Wallet: Wallet) {
+export function settlementWithThreeParticipants(participant1Wallet: SignerWithAddress, participant2Wallet: SignerWithAddress, participant3Wallet: SignerWithAddress) {
     return {
         name: 'Pizza',
         date: 123,
@@ -88,12 +91,24 @@ export function settlementWithThreeParticipants(participant1Wallet: Wallet, part
     };
 }
 
-export function settlementWithOneParticipant(participant1Wallet: Wallet) {
+export function settlementWithOneParticipant(participant1Wallet: SignerWithAddress) {
     return {
         name: 'Pizza',
         date: 123,
         participants: [{
             participant: participant1Wallet.address,
+            currency: PLN,
+            amount: 15
+        }]
+    };
+}
+
+export function settlementWithOneParticipantFromAddress(wallet: Address) {
+    return {
+        name: 'Pizza',
+        date: 123,
+        participants: [{
+            participant: wallet,
             currency: PLN,
             amount: 15
         }]

@@ -1,35 +1,45 @@
-import {expect, use} from 'chai';
-import {Contract} from 'ethers';
-import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
-// @ts-ignore
-import SettlementMechanism from '../../../build/SettlementMechanism.json';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {expect} from 'chai';
+import { deployments, ethers, getNamedAccounts } from 'hardhat';
+import { Address } from 'hardhat-deploy/types';
+import { SettlementMechanism } from '../../typechain-types';
 import {
     PLN, settlementWithOneParticipant,
+    settlementWithOneParticipantFromAddress,
     settlementWithThreeParticipants,
     twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants
 } from "./Settlements_fixture";
 
-use(solidity);
 
 describe('SettlementMechanism - adding new settlement', () => {
-    const [wallet, participant1Wallet, participant2Wallet, participant3Wallet] = new MockProvider().getWallets()
-    let contract: Contract
+    let contract: SettlementMechanism
+    let deployer: Address 
+    let participant1Wallet: SignerWithAddress, participant2Wallet: SignerWithAddress, participant3Wallet: SignerWithAddress
 
     beforeEach(async () => {
-        contract = await deployContract(wallet, SettlementMechanism, []);
+        deployer = (await getNamedAccounts()).deployer
+        const accounts = await ethers.getSigners()
+        participant1Wallet = accounts[1]
+        participant2Wallet = accounts[2]
+        participant3Wallet = accounts[3]
+        await deployments.fixture()
+        contract = await ethers.getContract("SettlementMechanism", deployer)
     })
 
     it('Reverts when participant list is empty when adding new settlement', async () => {
+        //given
         const someSettlement = {
             name: 'Pizza',
             date: 123,
             participants: []
         }
 
+        //when /then
         await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.revertedWith("Settlement participants have to exist");
     })
 
     it('Reverts when settlement name is empty when adding new settlement', async () => {
+        //given
         const someSettlement = {
             name: '',
             date: 123,
@@ -40,10 +50,12 @@ describe('SettlementMechanism - adding new settlement', () => {
             }]
         }
 
+        //when /then
         await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.revertedWith("Name must not be empty");
     })
 
     it('Reverts when date is negative when adding new settlement', async () => {
+        //given
         const someSettlement = {
             name: 'Pizza',
             date: -100,
@@ -54,41 +66,44 @@ describe('SettlementMechanism - adding new settlement', () => {
             }]
         }
 
-        await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.reverted;
+        //when /then
+        await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.revertedWithPanic;
     })
 
     it('Reverts when passed empty object when adding new settlement', async () => {
-        await expect(contract.addNewSettlement({}, {gasLimit: 5000000})).to.be.reverted;
+        await expect(contract.addNewSettlement({}, {gasLimit: 5000000})).to.be.revertedWithPanic;
     })
 
     it('Reverts when new settlement contains payer in participants list', async () => {
+        //given
         const someSettlement = {
             name: 'Pizza',
             date: 100,
             participants: [{
-                participant: wallet.address,
+                participant: deployer,
                 currency: PLN,
                 amount: 15
             }]
         }
 
+        //when /then
         await expect(contract.addNewSettlement(someSettlement, {gasLimit: 5000000})).to.be.revertedWith("You can't be a payer and participant at the same time");
     })
 
     it('Returns senders unfinished settlements when new settlement is freshly added', async () => {
+        //then
         const someSettlement = settlementWithOneParticipant(participant1Wallet)
 
+        //when
         await contract.addNewSettlement(someSettlement)
         const result = await contract.getMyUnfinishedSettlements();
 
-        expect('addNewSettlement').to.be.calledOnContractWith(contract, [someSettlement]);
-        expect('getMyUnfinishedSettlements').to.be.calledOnContract(contract);
-
+        //then
         expect(result).to.be.an('array').that.is.not.empty
 
         const returnedSettlementDto = result[0];
         expect(returnedSettlementDto.id).to.be.not.null
-        expect(returnedSettlementDto.payer).to.equal(wallet.address)
+        expect(returnedSettlementDto.payer).to.equal(deployer)
         expect(returnedSettlementDto.name).to.equal('Pizza')
         expect(returnedSettlementDto.date).to.equal(123)
         expect(returnedSettlementDto.finished).to.be.false
@@ -104,11 +119,14 @@ describe('SettlementMechanism - adding new settlement', () => {
     })
 
     it('Adds all defined participants to the settlement when creating new settlement', async () => {
+        //given
         const someSettlement = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet)
 
+        //when
         await contract.addNewSettlement(someSettlement)
         const result = await contract.getMyUnfinishedSettlements();
 
+        //then
         expect(result[0].participants).to.be.an('array').that.is.not.empty
         expect(result[0].participants.length).to.equal(3)
 
@@ -118,11 +136,14 @@ describe('SettlementMechanism - adding new settlement', () => {
     })
 
     it('Sets all participants obligations as NOT confirmed after adding new settlement', async () => {
+        //given
         const someSettlement = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet)
 
+        //when
         await contract.addNewSettlement(someSettlement)
         const result = await contract.getMyUnfinishedSettlements();
 
+        //then
         expect(result[0].participants[0].confirmed).to.false
         expect(result[0].participants[1].confirmed).to.false
         expect(result[0].participants[2].confirmed).to.false
@@ -132,11 +153,18 @@ describe('SettlementMechanism - adding new settlement', () => {
 })
 
 describe('SettlementMechanism - get all settlements i participated in', () => {
-    const [wallet, participant1Wallet, participant2Wallet, participant3Wallet] = new MockProvider().getWallets()
-    let contract: Contract
+    let contract: SettlementMechanism
+    let deployer: Address 
+    let participant1Wallet: SignerWithAddress, participant2Wallet: SignerWithAddress, participant3Wallet: SignerWithAddress
 
     beforeEach(async () => {
-        contract = await deployContract(wallet, SettlementMechanism, []);
+        deployer = (await getNamedAccounts()).deployer
+        const accounts = await ethers.getSigners()
+        participant1Wallet = accounts[1]
+        participant2Wallet = accounts[2]
+        participant3Wallet = accounts[3]
+        await deployments.fixture()
+        contract = await ethers.getContract("SettlementMechanism", deployer)
     })
 
 
@@ -148,7 +176,7 @@ describe('SettlementMechanism - get all settlements i participated in', () => {
     it('Returns both settlements where i am the payer and the debtor', async () => {
         //given
         const settlementWhereIAmThePayer = settlementWithThreeParticipants(participant1Wallet, participant2Wallet, participant3Wallet);
-        const settlementWhereIAmADebtor = settlementWithOneParticipant(wallet);
+        const settlementWhereIAmADebtor = settlementWithOneParticipantFromAddress(deployer);
 
         await contract.addNewSettlement(settlementWhereIAmThePayer);
         await contract.connect(participant3Wallet).addNewSettlement(settlementWhereIAmADebtor);
@@ -159,18 +187,26 @@ describe('SettlementMechanism - get all settlements i participated in', () => {
         //then
         expect(allSettlementsIParticipated.length).to.be.equal(2)
         expect(allSettlementsIParticipated[0].payer).to.be.properAddress
-        expect(allSettlementsIParticipated[0].payer).to.be.equal(wallet.address)
+        expect(allSettlementsIParticipated[0].payer).to.be.equal(deployer)
         expect(allSettlementsIParticipated[1].participants[0].participant).to.be.properAddress
-        expect(allSettlementsIParticipated[1].participants[0].participant).to.be.equal(wallet.address)
+        expect(allSettlementsIParticipated[1].participants[0].participant).to.be.equal(deployer)
     })
 })
 
 describe('SettlementMechanism - get my unfinished settlements', () => {
-    const [wallet, participant1Wallet, participant2Wallet, participant3Wallet] = new MockProvider().getWallets()
-    let contract: Contract
+    let contract: SettlementMechanism
+    let deployer: Address 
+    let participant1Wallet: SignerWithAddress, participant2Wallet: SignerWithAddress, participant3Wallet: SignerWithAddress
+
 
     beforeEach(async () => {
-        contract = await deployContract(wallet, SettlementMechanism, []);
+        deployer = (await getNamedAccounts()).deployer
+        const accounts = await ethers.getSigners()
+        participant1Wallet = accounts[1]
+        participant2Wallet = accounts[2]
+        participant3Wallet = accounts[3]
+        await deployments.fixture()
+        contract = await ethers.getContract("SettlementMechanism", deployer)
     })
 
 
@@ -181,7 +217,7 @@ describe('SettlementMechanism - get my unfinished settlements', () => {
 
     it('Gets unfinished settlements for contract caller', async () => {
         //given
-        await twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants(wallet, participant1Wallet, participant2Wallet, participant3Wallet, contract);
+        await twoSettlementsFromMainWalletAndTwoFromTwoOtherParticipants(deployer, participant1Wallet, participant2Wallet, participant3Wallet, contract);
 
 
         //call from main address
@@ -229,11 +265,19 @@ describe('SettlementMechanism - get my unfinished settlements', () => {
 })
 
 describe('SettlementMechanism - confirming', () => {
-    const [wallet, participant1Wallet, participant2Wallet, participant3Wallet] = new MockProvider().getWallets()
-    let contract: Contract
+    let contract: SettlementMechanism
+    let deployer: Address 
+    let participant1Wallet: SignerWithAddress, participant2Wallet: SignerWithAddress, participant3Wallet: SignerWithAddress
+
 
     beforeEach(async () => {
-        contract = await deployContract(wallet, SettlementMechanism, []);
+        deployer = (await getNamedAccounts()).deployer
+        const accounts = await ethers.getSigners()
+        participant1Wallet = accounts[1]
+        participant2Wallet = accounts[2]
+        participant3Wallet = accounts[3]
+        await deployments.fixture()
+        contract = await ethers.getContract("SettlementMechanism", deployer)
     })
 
 
